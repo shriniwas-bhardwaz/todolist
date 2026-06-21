@@ -16,6 +16,14 @@ import java.util.*;
  */
 public final class GroupAggregator {
 
+    /**
+     * Aggregates rows by key in a single pass using the supplied pluggable Aggregator.
+     * - Walks every row; looks up (or seeds via identity()) the key's accumulator, then accumulate()s the value.
+     * - Uses a LinkedHashMap so the output preserves first-seen key order.
+     * - After the pass, folds each accumulator through finish() into its reported long result.
+     * - The fold (identity/accumulate/finish) is the only thing that varies between SUM/MAX/MIN/etc.
+     * - O(n) time over n rows, O(k) space for k distinct keys.
+     */
     public static <A> Map<String, Long> aggregate(List<Row> rows, Aggregator<A> aggregator) {
         Map<String, A> accumulators = new LinkedHashMap<>();
 

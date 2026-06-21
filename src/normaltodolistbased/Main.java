@@ -1,7 +1,18 @@
-package normaltodo;
+package normaltodolistbased;
 
 public class Main {
 
+    /**
+     * Demonstrates a full lifecycle of TodoCheckList operations.
+     * - creates an empty checklist and appends task1, task2, task4
+     * - prints the initial checklist state
+     * - inserts task3 before task4 and reprints
+     * - marks task2 complete and reprints
+     * - moves task3 to index 0 (the beginning) and reprints
+     * - deletes task1 and reprints
+     * - computes the last valid index (size - 1) and moves task2 there
+     * - prints the final state after moving task2 to the end
+     */
     public static void main(String[] args) {
 
         TodoCheckList checklist = new TodoCheckList();

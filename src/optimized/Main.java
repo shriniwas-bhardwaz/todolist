@@ -2,6 +2,16 @@ package optimized;
 
 public class Main {
 
+    /**
+     * Demo driver exercising the index-based OptimizedNestedTodoList.
+     * - Builds a nested tree: two roots plus children/grandchildren under task1.
+     * - Prints the initial tree, then completes a deep task (task1.1.1.2).
+     * - Moves task1.1 (with its subtree) under task2 as its first child (index 0).
+     * - Outdents task1.1 back toward root, then indents it under its previous sibling.
+     * - Deletes the task1.1.1 subtree, printing the tree after each step.
+     * - Runs two cycle regression checks: move(a, c, 0) and moveBefore(a, c) must both throw.
+     * - Prints the final tree.
+     */
     public static void main(String[] args) {
         OptimizedNestedTodoList todoList = new OptimizedNestedTodoList();
 

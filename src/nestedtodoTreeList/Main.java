@@ -1,7 +1,16 @@
-package nestedtodo;
+package nestedtodoTreeList;
 
 public class Main {
 
+    /**
+     * Demonstrates the parent/children NestedTodoList by building and mutating a sample tree.
+     * - Creates two root tasks (task1, task2).
+     * - Adds two children under task1 (task1.1, task1.2).
+     * - Adds a grandchild (task1.1.1) under task1.1, then two great-grandchildren under it.
+     * - Prints the initial indented tree.
+     * - Moves the task1.1 subtree to become the first child of task2 via moveTask.
+     * - Prints the resulting tree to show the whole subtree re-parented intact.
+     */
     public static void main(String[] args) {
         NestedTodoList todoList = new NestedTodoList();
 

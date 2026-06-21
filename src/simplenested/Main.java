@@ -2,6 +2,15 @@ package simplenested;
 
 public class Main {
 
+    /**
+     * Demo driver exercising the orderKey-based SimpleNestedTodoList.
+     * - Builds a nested tree: two roots, children/grandchildren under task1.
+     * - Prints the initial tree, then completes a deep task (task1.1.1.2).
+     * - Moves task1.1 (with its subtree) under task2 in one re-parent.
+     * - Outdents task1.1 back to root, then indents it under its previous sibling.
+     * - Deletes the task1.1.1 subtree, printing the tree after each step.
+     * - Finally verifies cycle prevention: moving task1 under its descendant throws.
+     */
     public static void main(String[] args) {
         SimpleNestedTodoList todoList = new SimpleNestedTodoList();
 

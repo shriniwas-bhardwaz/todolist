@@ -1,7 +1,18 @@
-package flatTodo;
+package flatTodoList;
 
 public class Main {
 
+    /**
+     * Demonstrates the flat-list (depth-encoded) FlatNestedTodoList with a sample scenario.
+     * - Creates two root tasks (task1, task2).
+     * - Builds a nested hierarchy under task1: task1.1, task1.2, then task1.1.1 with two leaves, plus task2.1 under task2.
+     * - Prints the initial hierarchy.
+     * - Marks task1.1.1.2 completed and prints the updated view.
+     * - (The moveTask reordering steps are commented out, so they are skipped.)
+     * - Outdents task1.1 (promoting its subtree to root level after task2) and prints the result.
+     * - Indents task1.1 again so its previous sibling becomes its parent, then prints.
+     * - Deletes the task1.1.1 subtree and prints the final hierarchy.
+     */
     public static void main(String[] args) {
 
         FlatNestedTodoList todoList =

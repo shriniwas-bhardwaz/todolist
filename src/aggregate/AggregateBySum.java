@@ -13,6 +13,13 @@ import java.util.*;
  */
 public final class AggregateBySum {
 
+    /**
+     * Aggregates rows by key, summing all values that share the same key.
+     * - Iterates every row once, folding into a LinkedHashMap.
+     * - Uses Map.merge: first value for a key seeds it, later values add via Long::sum.
+     * - LinkedHashMap preserves first-seen key order in the output.
+     * - O(n) time (one pass over rows), O(k) space (k distinct keys).
+     */
     public static Map<String, Long> aggregate(List<Row> rows) {
         Map<String, Long> sums = new LinkedHashMap<>();
         for (Row row : rows) {

@@ -1,4 +1,4 @@
-package aggregate.extensible;
+package aggregate.fold;
 
 import aggregate.Row;
 
@@ -7,13 +7,10 @@ import java.util.*;
 public class Main {
 
     /**
-     * Demo entry point: runs the same row set through every built-in aggregator.
+     * Demo entry point showing the plain-English start/combine/result Aggregator.
      * - Builds a fixed 5-row dataset with repeated keys A and B (and a single C).
-     * - SUM demo: shows per-key totals (A=5, B=6, C=4).
-     * - MAX/MIN demos: show the largest/smallest value seen per key.
-     * - COUNT demo: shows how many rows fall under each key.
-     * - AVERAGE demo: shows truncated mean per key, proving extra accumulator state works.
-     * - Same GroupAggregator.aggregate call each time; only the plugged-in Aggregator changes.
+     * - Runs SUM, MAX, MIN, COUNT, AVERAGE through the same GroupAggregator.
+     * - Only the Aggregator changes between calls; the grouping code is reused.
      */
     public static void main(String[] args) {
         List<Row> rows = List.of(
@@ -32,10 +29,8 @@ public class Main {
     }
 
     /**
-     * Pretty-prints one aggregation result under a labeled header.
-     * - Prints the label line, then one "(key, value)" line per entry.
-     * - Iterates the map in its stored (insertion) order.
-     * - O(k) for k keys; presentation only, no aggregation logic.
+     * Prints one labeled aggregation result.
+     * - Writes the label header, then each "(key, value)" pair indented.
      */
     private static void print(String label, Map<String, Long> result) {
         System.out.println("Aggregate by " + label + ":");
