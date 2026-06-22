@@ -1,4 +1,4 @@
-package simplenested;
+package bestsnested;
 
 import java.util.*;
 
@@ -197,15 +197,33 @@ public final class SimpleNestedTodoList {
     /**
      * Outdent: the task becomes the next sibling of its current parent.
      * - Returns false if the task is already at root level (no parent to climb past).
-     * - Otherwise re-parents it to its grandparent (or root if the parent was root-level).
-     * - Promotes the task one level up the tree, subtree following along.
-     * - O(depth) cycle check + O(n) move.
+     * - Re-parents to the grandparent (or root if the parent was root-level) and slots
+     *   the task IMMEDIATELY AFTER its former parent, not at the end of the list.
+     * - Uses a fractional orderKey between the parent and the parent's next sibling,
+     *   so only this one node's position changes (subtree follows for free).
+     * - No cycle check needed: the grandparent is always an ancestor, never a descendant.
+     * - O(depth) to reach the parent + O(n) to fetch/sort the grandparent's children.
      */
     public boolean outdent(long taskId) {
         Task task = requireTask(taskId);
         if (task.parentId == null) return false;
         Task parent = tasks.get(task.parentId);
-        move(taskId, parent.parentId); // grandparent (or root if parent was root-level)
+        Long grandParentId = parent.parentId;
+
+        // Read the grandparent's children BEFORE re-parenting, so `task` (still under
+        // `parent`) is not yet in this list and `parent`'s real neighbours are visible.
+        // DB: SELECT * FROM tasks WHERE parent_id = ? ORDER BY order_key — only the
+        //     parent's order_key and its next sibling's order_key are actually needed.
+        List<Task> siblings = childrenOf(grandParentId);
+        int parentIdx = indexOfById(siblings, parent.id);
+        double upper = (parentIdx + 1 < siblings.size())
+                ? siblings.get(parentIdx + 1).orderKey   // the sibling right after the parent
+                : parent.orderKey + 1.0;                 // parent is last → leave room past it
+
+        // DB: single-row UPDATE of (parent_id, order_key); the midpoint keeps it a
+        //     one-row write, matching OptimizedNestedTodoList's "insert after parent".
+        task.parentId = grandParentId;
+        task.orderKey = (parent.orderKey + upper) / 2.0; // slot right after the former parent
         return true;
     }
 
