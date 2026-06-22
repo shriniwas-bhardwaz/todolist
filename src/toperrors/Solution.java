@@ -5,8 +5,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Top-K error reporter: given a JSON array of request records, find the most
+ * frequent error messages within a time window.
+ *
+ * The JSON is parsed by hand (no library) via simple key-marker string scans,
+ * which is why each record's fields are located by their "key": prefix.
+ */
 public class Solution {
 
+    /**
+     * Returns the top-k errors (by frequency) seen within [startTime, endTime).
+     * - Step 1: guard null input; strip the outer [ ] and bail on an empty array.
+     * - Step 2: split the array into per-record chunks on the "},{" boundary.
+     * - Step 3: for each chunk, parse timestamp/status/error, then apply three filters:
+     *     in the half-open time window, status >= 400, and error present — counting survivors.
+     * - Step 4: sort entries by count descending, breaking ties by error string ascending.
+     * - Step 5: take the first k and shape each as a [error, count] row.
+     * - O(n) parse/filter + O(d log d) sort, where n = records, d = distinct errors.
+     */
     public List<List<Object>> solution(
             String recordsJson, String startTime, String endTime, int k) {
 
@@ -77,7 +94,12 @@ public class Solution {
         return result;
     }
 
-    /** Extract a string-valued field: "key":"value"  -> value (quotes stripped). */
+    /**
+     * Extracts a string-valued field: "key":"value" -> value (quotes stripped).
+     * - Builds the marker "key":" and finds where the value starts after it.
+     * - Returns null if the key is absent or the closing quote is missing.
+     * - Reads up to the next double-quote, so commas inside the value are safe.
+     */
     private String extractString(String chunk, String key) {
         String marker = "\"" + key + "\":\"";
         int start = chunk.indexOf(marker);
@@ -92,7 +114,12 @@ public class Solution {
         return chunk.substring(start, end);
     }
 
-    /** Extract a numeric field: "key":123  -> 123. Reads until a non-digit. */
+    /**
+     * Extracts a numeric field: "key":123 -> 123.
+     * - Finds the marker "key": and scans forward over digits (and a leading '-').
+     * - Returns null if the key is absent or no digits follow the colon.
+     * - Parses the captured substring as an int.
+     */
     private Integer extractInt(String chunk, String key) {
         String marker = "\"" + key + "\":";
         int start = chunk.indexOf(marker);
@@ -112,8 +139,11 @@ public class Solution {
     }
 
     /**
-     * Extract the error field, which is EITHER "error":"some string" OR "error":null.
-     * Returns null when the field is missing or explicitly null.
+     * Extracts the error field, which is EITHER "error":"some string" OR "error":null.
+     * - Needs special handling (vs extractString) because the value may be the literal null.
+     * - Finds the marker "error": and skips any spaces after the colon.
+     * - If the value starts with a quote, returns the quoted string (quotes stripped).
+     * - Returns null when the field is missing, explicitly null, or non-string.
      */
     private String extractError(String chunk) {
         String marker = "\"error\":";
