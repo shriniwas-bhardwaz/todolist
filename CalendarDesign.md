@@ -70,12 +70,13 @@ These resolve ambiguities up front so the rest of the design is consistent.
 
 ## Non-Functional Requirements
 
-| # | Requirement | Target |
-|---|---|---|
-| **NFR1** | Availability >> Consistency | Calendar reads always served, even degraded |
-| **NFR2** | Multi-device real-time sync | 3–5 sec at p95 |
-| **NFR3** | High scalability | 10s of millions of users |
-| **NFR4** | Low latency | Get event < 20ms p95; free/busy check < 500ms p95 |
+| #        | Requirement                 | Target                                                                                                                                                                                                                                                                          |
+|----------|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **NFR1** | Availability >> Consistency | Calendar reads always served, even degraded                                                                                                                                                                                                                                     |
+| **NFR2** |  Consistency | Use different consistency guarantee for different data - <br/>String consistency required for event creation and modification; calendar permissions; ownership changes<br/> Eventual consistency acceptable for User Timeline view, notifications, free/busy materialized views |
+| **NFR3** | Durability | Confirmed events must not lost                                                                                                                                                                                                                                                  |
+| **NFR4** | High scalability            | Hundreds  of millions of users , billions of events and occurrences                                                                                                                                                                                                             |
+| **NFR5** | Low latency                 | Get event < 200ms p95; free/busy check < 500ms p95                                                                                                                                                                                                                              |
 
 ---
 
@@ -205,14 +206,17 @@ Backs all event CRUD and calendar views. A row is either a single event **or** a
 
 Per-occurrence override or cancellation of a recurring series (the "exceptions" half of master+exceptions).
 
-| Field | Description |
-|---|---|
-| `exception_id` | Primary key |
-| `parent_event_id` | FK → `Event.event_id` (the series master) |
-| `occurrence_local_start` | Identifies *which* occurrence (its original wall-clock start) |
-| `overridden_fields` | JSON of fields that differ for this occurrence (e.g. new time/title) |
-| `is_cancelled` | True if this single occurrence is removed |
-| `version` | |
+| Field               | Description                                                                                                                  |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------|
+| `exception_id`      | Primary key                                                                                                                  |
+| `event_id`          | the recurring series this exception belongs to                                                                               |
+| `original_start_ts` | The expected start time of the occurrence according to series rule. This is how we identify which instance is being changed. |
+| `override_start_ts` | New start time for this occurrence                                                                                           |
+| `override_end_ts`   | New end time for this occurrence                                                                                             |
+| `override_title`    | New start time for this occurrence                                                                                           |
+| `override_location` | New start time for this occurrence                                                                                           |
+| `status`            | active or cancelled. if cancelled this occurence is skipped entirely.                                                        |
+| `created_at`        |                                                                                                                              |
 
 ### EventAttendee
 
@@ -265,6 +269,18 @@ In the simplest design, FR4 computes free/busy directly from **Event + EventAtte
 | `end_ts` | End of busy interval (UTC) |
 | `status` | `BUSY` \| `TENTATIVE` \| `OUT_OF_OFFICE` |
 | `source_event_id` | Optional reference for debugging |
+
+### ChangeLog
+
+| Field         | Description                                                         |
+|---------------|---------------------------------------------------------------------|
+| `change_id`   | Monotonically increasing sequence (bigint); acts as the global cursor |
+| `user_id`     | User affected by this change. We write one row per affected user.   |
+| `event_id`    | Event whose state changed                                           |
+| `change_type` | CREATED, UPDATED, DELETED, RSVP_UPDATED                             |
+| `changed_at`  | Timestamp of the change                                             |
+| `source`      | WEB MOBILE                                                          |
+
 
 > This is a **read model**: rebuilt asynchronously when events change. It trades freshness (NFR1 favors availability) for fast, denormalized availability reads.
 
@@ -417,3 +433,12 @@ Target 3–5s p95 across a user's devices:
 | **Reminder** | `reminder_id`, `event_id`, `user_id`, `lead_time_seconds`, `channel` |
 | **NotificationJob** | `job_id`, `tenant_id`, `type`, `execute_at`, `payload`, `status` |
 | **FreeBusyBlock** *(derived)* | `user_id`, `start_ts`, `end_ts`, `status`, `source_event_id` |
+
+## Push invalidation + delta sync
+
+- When the Calendar service commits a change that affects some users it appends rows to Changelog for 
+  each affected user_id -> message bus
+- Online devices maintain a push notification
+- When that service receives the message it sends a tiny invalidation to all devices for that users
+- Each device calls GET /v1/sync?cursor=last_seen_Cursor to pull the actual deltas.
+---
